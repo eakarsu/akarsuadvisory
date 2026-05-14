@@ -90,6 +90,9 @@ async function seed() {
         preferred_time VARCHAR(50),
         status VARCHAR(50) DEFAULT 'pending',
         notes TEXT,
+        lead_score VARCHAR(20),
+        lead_score_reasoning JSONB,
+        lead_scored_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW()
       );
 
@@ -102,7 +105,22 @@ async function seed() {
         subject VARCHAR(500),
         message TEXT,
         status VARCHAR(50) DEFAULT 'new',
+        notes TEXT,
+        lead_score VARCHAR(20),
+        lead_score_reasoning JSONB,
+        lead_scored_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS scheduled_insights (
+        id SERIAL PRIMARY KEY,
+        topic VARCHAR(500) NOT NULL,
+        category VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'queued',
+        result_insight_id INT,
+        error TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        processed_at TIMESTAMP
       );
     `);
 

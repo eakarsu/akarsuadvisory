@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 const NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/ai', label: 'AI Assistant' },
+  { to: '/admin/ai/generate-proposal', label: 'AI Proposal' },
+  { to: '/admin/ai/predict-engagement', label: 'AI Engagement' },
   { to: '/admin/consultations', label: 'Consultations' },
   { to: '/admin/contacts', label: 'Contacts' },
   { to: '/admin/services', label: 'Services' },

@@ -29,6 +29,7 @@ export default function BookConsultation() {
   const [form, setForm] = useState({
     email: '', name: '', company: '', phone: '',
     employees: '', industry: '', services: [], message: '',
+    website: '', // honeypot — must stay blank; bots fill it in
   });
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -57,6 +58,7 @@ export default function BookConsultation() {
           phone: form.phone,
           service_interest: form.services.join('; '),
           message: `Employees: ${form.employees}\nIndustry: ${form.industry}\n\nServices:\n${form.services.map(s => '- ' + s).join('\n')}\n\nNotes: ${form.message || 'N/A'}`,
+          website: form.website, // honeypot
         }),
       });
       if (!res.ok) throw new Error('Failed');
@@ -142,6 +144,12 @@ export default function BookConsultation() {
               <div className="form-group">
                 <label htmlFor="b-msg">Any other notes/comments/questions you may have? (Optional)</label>
                 <textarea id="b-msg" rows={4} value={form.message} onChange={e => setForm({...form, message: e.target.value})} />
+              </div>
+
+              {/* Honeypot field — hidden from humans, bots fill it in */}
+              <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }} aria-hidden="true">
+                <label htmlFor="b-website">Website</label>
+                <input id="b-website" type="text" name="website" tabIndex={-1} autoComplete="off" value={form.website} onChange={e => setForm({...form, website: e.target.value})} />
               </div>
 
               <button type="submit" className="btn btn-primary btn-lg">Request Consultation</button>

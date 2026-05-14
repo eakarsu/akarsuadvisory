@@ -32,6 +32,22 @@ export default function AdminAI() {
   const [analyzeData, setAnalyzeData] = useState('');
   const [analyzeType, setAnalyzeType] = useState('financial');
 
+  // White Paper Generator
+  const [wpTopic, setWpTopic] = useState('');
+  const [wpAudience, setWpAudience] = useState('');
+  const [wpFindings, setWpFindings] = useState('');
+
+  // Predictive Pricing
+  const [priceService, setPriceService] = useState('');
+  const [priceScope, setPriceScope] = useState('');
+  const [priceDuration, setPriceDuration] = useState('');
+  const [priceComplexity, setPriceComplexity] = useState('Medium');
+
+  // Consultant Matcher
+  const [matchIndustry, setMatchIndustry] = useState('');
+  const [matchChallenge, setMatchChallenge] = useState('');
+  const [matchConsultants, setMatchConsultants] = useState('');
+
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); alert('Copied!'); };
 
   const loadSample = (tab) => {
@@ -84,6 +100,26 @@ export default function AdminAI() {
       ];
       const s = samples[Math.floor(Math.random() * samples.length)];
       setAnalyzeType(s.type); setAnalyzeData(s.data);
+    }
+    if (tab === 'whitepaper') {
+      setWpTopic('How fractional CFOs improve runway for early-stage SaaS startups');
+      setWpAudience('Early-stage SaaS founders and CFOs');
+      setWpFindings('Across 12 client engagements, fractional CFO advisory extended runway by an average of 11.4 months, reduced burn by 18%, and improved board reporting cadence.');
+    }
+    if (tab === 'pricing') {
+      setPriceService('Fractional CFO retainer');
+      setPriceScope('Monthly close oversight, 13-week cash forecast, KPI dashboard, board prep');
+      setPriceDuration('12');
+      setPriceComplexity('Medium');
+    }
+    if (tab === 'matcher') {
+      setMatchIndustry('Specialty Retail');
+      setMatchChallenge('Profitable on paper but cash-strapped mid-month across 3 stores; needs a 13-week cash forecast and working capital review.');
+      setMatchConsultants(JSON.stringify([
+        { id: 'c1', name: 'A. Akarsu', specialties: ['cash flow', 'fractional CFO', 'retail'], yearsExperience: 18 },
+        { id: 'c2', name: 'J. Patel', specialties: ['SaaS finance', 'modeling'], yearsExperience: 9 },
+        { id: 'c3', name: 'M. Rivera', specialties: ['working capital', 'retail ops'], yearsExperience: 12 },
+      ], null, 2));
     }
   };
 
@@ -155,6 +191,83 @@ export default function AdminAI() {
     setLoading(false);
   };
 
+  const generateWhitePaper = async () => {
+    if (!wpTopic.trim()) return;
+    setLoading(true); setResult(null);
+    try {
+      const res = await api('/api/admin/ai/generate-white-paper', {
+        method: 'POST',
+        body: JSON.stringify({ topic: wpTopic, audience: wpAudience, keyFindings: wpFindings }),
+      });
+      const data = await res.json();
+      if (res.status === 503) {
+        setResult({ type: 'error', data: data.error || 'AI service unavailable.' });
+      } else if (!res.ok) {
+        setResult({ type: 'error', data: data.error || 'Failed to generate.' });
+      } else {
+        setResult({ type: 'whitepaper', data });
+      }
+    } catch { setResult({ type: 'error', data: 'Failed to generate.' }); }
+    setLoading(false);
+  };
+
+  const predictPricing = async () => {
+    if (!priceService.trim()) return;
+    setLoading(true); setResult(null);
+    try {
+      const res = await api('/api/admin/ai/predict-pricing', {
+        method: 'POST',
+        body: JSON.stringify({
+          service: priceService,
+          scope: priceScope,
+          durationWeeks: priceDuration,
+          complexity: priceComplexity,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 503) {
+        setResult({ type: 'error', data: data.error || 'AI service unavailable.' });
+      } else if (!res.ok) {
+        setResult({ type: 'error', data: data.error || 'Failed to predict pricing.' });
+      } else {
+        setResult({ type: 'pricing', data });
+      }
+    } catch { setResult({ type: 'error', data: 'Failed to predict pricing.' }); }
+    setLoading(false);
+  };
+
+  const matchConsultant = async () => {
+    if (!matchChallenge.trim() || !matchConsultants.trim()) return;
+    setLoading(true); setResult(null);
+    let consultantsArr;
+    try {
+      consultantsArr = JSON.parse(matchConsultants);
+    } catch {
+      setResult({ type: 'error', data: 'Consultants field must be valid JSON array.' });
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await api('/api/admin/ai/match-consultant', {
+        method: 'POST',
+        body: JSON.stringify({
+          clientIndustry: matchIndustry,
+          challenge: matchChallenge,
+          consultants: consultantsArr,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 503) {
+        setResult({ type: 'error', data: data.error || 'AI service unavailable.' });
+      } else if (!res.ok) {
+        setResult({ type: 'error', data: data.error || 'Failed to match consultant.' });
+      } else {
+        setResult({ type: 'matcher', data });
+      }
+    } catch { setResult({ type: 'error', data: 'Failed to match consultant.' }); }
+    setLoading(false);
+  };
+
   const tabs = [
     { id: 'insight', label: 'Article Generator' },
     { id: 'reply', label: 'Email Reply' },
@@ -162,6 +275,9 @@ export default function AdminAI() {
     { id: 'industry', label: 'Industry Content' },
     { id: 'casestudy', label: 'Case Study' },
     { id: 'analyze', label: 'Data Analyzer' },
+    { id: 'whitepaper', label: 'White Paper' },
+    { id: 'pricing', label: 'Pricing Predictor' },
+    { id: 'matcher', label: 'Consultant Matcher' },
   ];
 
   const renderResult = () => {
@@ -195,6 +311,9 @@ export default function AdminAI() {
     if (result.type === 'industry') return resultBox(result.data);
     if (result.type === 'casestudy') return resultBox(result.data);
     if (result.type === 'analysis') return resultBox(result.data.analysis);
+    if (result.type === 'whitepaper') return resultBox(result.data.whitePaper || result.data);
+    if (result.type === 'pricing') return resultBox(result.data);
+    if (result.type === 'matcher') return resultBox(result.data);
     return null;
   };
 
@@ -320,6 +439,62 @@ export default function AdminAI() {
               </select>
               <textarea placeholder="Paste your data here (CSV, JSON, or plain text)..." rows={6} value={analyzeData} onChange={e => setAnalyzeData(e.target.value)} style={textareaStyle} />
               <button className="btn btn-primary" onClick={analyzeBusinessData} disabled={loading}>{loading ? 'Analyzing...' : 'Analyze Data'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* White Paper */}
+        {activeTab === 'whitepaper' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', margin: 0 }}>AI White Paper Generator</h2>
+              <button style={sampleBtnStyle} onClick={() => loadSample('whitepaper')}>Load Sample</button>
+            </div>
+            <p style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Draft a thought-leadership white paper from case study data and key findings.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input placeholder="Topic" value={wpTopic} onChange={e => setWpTopic(e.target.value)} style={inputStyle} />
+              <input placeholder="Target audience" value={wpAudience} onChange={e => setWpAudience(e.target.value)} style={inputStyle} />
+              <textarea placeholder="Key findings / data points to highlight" rows={4} value={wpFindings} onChange={e => setWpFindings(e.target.value)} style={textareaStyle} />
+              <button className="btn btn-primary" onClick={generateWhitePaper} disabled={loading}>{loading ? 'Drafting...' : 'Generate White Paper'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* Pricing Predictor */}
+        {activeTab === 'pricing' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', margin: 0 }}>AI Pricing Predictor</h2>
+              <button style={sampleBtnStyle} onClick={() => loadSample('pricing')}>Load Sample</button>
+            </div>
+            <p style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Recommend fixed-fee, hourly, and retainer pricing for an advisory engagement.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input placeholder="Service" value={priceService} onChange={e => setPriceService(e.target.value)} style={inputStyle} />
+              <textarea placeholder="Scope of work" rows={3} value={priceScope} onChange={e => setPriceScope(e.target.value)} style={textareaStyle} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <input placeholder="Duration (weeks)" value={priceDuration} onChange={e => setPriceDuration(e.target.value)} style={inputStyle} />
+                <select value={priceComplexity} onChange={e => setPriceComplexity(e.target.value)} style={inputStyle}>
+                  <option>Low</option><option>Medium</option><option>High</option>
+                </select>
+              </div>
+              <button className="btn btn-primary" onClick={predictPricing} disabled={loading}>{loading ? 'Pricing...' : 'Predict Pricing'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* Consultant Matcher */}
+        {activeTab === 'matcher' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', margin: 0 }}>AI Consultant Matcher</h2>
+              <button style={sampleBtnStyle} onClick={() => loadSample('matcher')}>Load Sample</button>
+            </div>
+            <p style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Rank consultants for a client engagement by industry and challenge fit.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input placeholder="Client industry" value={matchIndustry} onChange={e => setMatchIndustry(e.target.value)} style={inputStyle} />
+              <textarea placeholder="Client challenge" rows={3} value={matchChallenge} onChange={e => setMatchChallenge(e.target.value)} style={textareaStyle} />
+              <textarea placeholder='Consultants (JSON array, e.g. [{"id":"c1","name":"Jane","specialties":["cash flow"]}])' rows={6} value={matchConsultants} onChange={e => setMatchConsultants(e.target.value)} style={{ ...textareaStyle, fontFamily: 'monospace' }} />
+              <button className="btn btn-primary" onClick={matchConsultant} disabled={loading}>{loading ? 'Matching...' : 'Match Consultant'}</button>
             </div>
           </div>
         )}
