@@ -43,6 +43,9 @@ app.use('/api/admin/ai', aiRateLimiter, require('./routes/ai'));
 app.use('/api/admin', require('./routes/scheduledInsights'));
 app.use('/api/custom', require('./routes/customFeatures'));
 
+// === Custom Views (VIZ + NON-VIZ) - mount BEFORE 404 ===
+app.use('/api/custom-views', require('./routes/customViews'));
+
 const PORT = process.env.BACKEND_PORT || process.env.PORT || 3001;
 // // === Batch 09 Gaps & Frontend Mounts ===
 app.use('/api/gap-ai-akarsuadvisory', require('./routes/batch09GapAi')); // // === Batch 09 Gaps & Frontend Mounts ===
