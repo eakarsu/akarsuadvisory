@@ -1,26 +1,58 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
+const pool = require('../db');
+const { sendNotification } = require('../mailer');
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 
-async function aiComplete(prompt) {
+async function aiComplete(prompt, maxTokens = 1000) {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_KEY}` },
     body: JSON.stringify({
       model: 'anthropic/claude-sonnet-4',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1000,
+      max_tokens: maxTokens,
     }),
   });
   const data = await res.json();
   return data.choices?.[0]?.message?.content || 'Unable to generate response.';
 }
 
+/**
+ * Robustly parse a JSON object from an LLM text response.
+ * Tries: 1) direct JSON.parse, 2) strip markdown fences, 3) regex extraction.
+ */
+function parseJsonFromAI(text) {
+  // 1. Try direct parse
+  try {
+    return JSON.parse(text);
+  } catch (_) {}
+
+  // 2. Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) {
+    try {
+      return JSON.parse(fenceMatch[1].trim());
+    } catch (_) {}
+  }
+
+  // 3. Regex extraction — last resort
+  const braceMatch = text.match(/\{[\s\S]*\}/);
+  if (braceMatch) {
+    try {
+      return JSON.parse(braceMatch[0]);
+    } catch (_) {}
+  }
+
+  return null;
+}
+
 // Generate email reply for consultation
+// Supports action='reply' (default) and action='reply-and-send'
 router.post('/reply-consultation', auth, async (req, res) => {
   try {
-    const { name, company, service_interest, message } = req.body;
+    const { name, email, company, service_interest, message, consultation_id, action } = req.body;
     const prompt = `You are a professional financial advisor at Akarsu Advisory, a financial advisory firm for small businesses. Write a warm, professional email reply to a consultation request.
 
 Client: ${name}${company ? ` from ${company}` : ''}
@@ -34,15 +66,41 @@ Write a concise, friendly reply (3-4 paragraphs) that:
 4. Suggests next steps (scheduling a call)
 
 Sign off as "The Akarsu Advisory Team". Do not include subject line.`;
+
     const reply = await aiComplete(prompt);
+
+    if (action === 'reply-and-send') {
+      // Send the email to the lead
+      if (!email) return res.status(400).json({ error: 'Recipient email is required for reply-and-send' });
+
+      await sendNotification(
+        `Re: Your Consultation Request — Akarsu Advisory`,
+        `<div style="font-family:sans-serif;max-width:600px;line-height:1.7;">
+          ${reply.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('')}
+        </div>`,
+        email  // sendNotification sends to NOTIFY_EMAIL + extraRecipient
+      );
+
+      // Mark the DB record as replied with timestamp
+      if (consultation_id) {
+        await pool.query(
+          `UPDATE consultations SET status='contacted', notes=COALESCE(notes||E'\n\n','') || $1 WHERE id=$2`,
+          [`[AI Reply Sent at ${new Date().toISOString()}]\n${reply}`, consultation_id]
+        );
+      }
+
+      return res.json({ reply, sent: true, sent_at: new Date().toISOString() });
+    }
+
     res.json({ reply });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Generate email reply for contact
+// Supports action='reply' (default) and action='reply-and-send'
 router.post('/reply-contact', auth, async (req, res) => {
   try {
-    const { name, company, subject, message } = req.body;
+    const { name, email, company, subject, message, contact_id, action } = req.body;
     const prompt = `You are a professional financial advisor at Akarsu Advisory, a financial advisory firm for small businesses. Write a warm, professional email reply to a contact form submission.
 
 Client: ${name}${company ? ` from ${company}` : ''}
@@ -56,7 +114,35 @@ Write a concise, friendly reply (3-4 paragraphs) that:
 4. Suggests booking a consultation for a deeper discussion
 
 Sign off as "The Akarsu Advisory Team". Do not include subject line.`;
+
     const reply = await aiComplete(prompt);
+
+    if (action === 'reply-and-send') {
+      if (!email) return res.status(400).json({ error: 'Recipient email is required for reply-and-send' });
+
+      await sendNotification(
+        `Re: ${subject || 'Your Inquiry'} — Akarsu Advisory`,
+        `<div style="font-family:sans-serif;max-width:600px;line-height:1.7;">
+          ${reply.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('')}
+        </div>`,
+        email
+      );
+
+      if (contact_id) {
+        await pool.query(
+          `UPDATE contacts SET status='replied' WHERE id=$1`,
+          [contact_id]
+        );
+        // Store the sent reply in a note-style column if it exists, otherwise skip gracefully
+        await pool.query(
+          `UPDATE contacts SET notes=COALESCE(notes||E'\n\n','') || $1 WHERE id=$2`,
+          [`[AI Reply Sent at ${new Date().toISOString()}]\n${reply}`, contact_id]
+        ).catch(() => {}); // notes column may not exist yet — silently ignore
+      }
+
+      return res.json({ reply, sent: true, sent_at: new Date().toISOString() });
+    }
+
     res.json({ reply });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -78,12 +164,12 @@ Write in markdown format with:
 - Practical, actionable, no fluff
 
 Return as JSON: {"title": "...", "summary": "...", "content": "...", "slug": "..."}`;
+
     const text = await aiComplete(prompt);
-    try {
-      const match = text.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(match[0]);
+    const parsed = parseJsonFromAI(text);
+    if (parsed) {
       res.json(parsed);
-    } catch {
+    } else {
       res.json({ title: topic, summary: '', content: text, slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-') });
     }
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -116,10 +202,8 @@ Return as JSON: {"tagline": "short compelling tagline", "description": "2-3 sent
     const prompt = `You are a professional financial advisor at Akarsu Advisory, helping small businesses. ${actions[action] || actions['improve-description']}`;
     const text = await aiComplete(prompt);
     if (action === 'full-generate') {
-      try {
-        const match = text.match(/\{[\s\S]*\}/);
-        res.json(JSON.parse(match[0]));
-      } catch { res.json({ result: text }); }
+      const parsed = parseJsonFromAI(text);
+      res.json(parsed || { result: text });
     } else {
       res.json({ result: text.trim() });
     }
@@ -141,10 +225,8 @@ Return as JSON: {"description": "2-3 sentence overview", "challenges": "paragrap
     const prompt = `You are a professional financial advisor at Akarsu Advisory, helping small businesses. ${actions[action] || actions['full-generate']}`;
     const text = await aiComplete(prompt);
     if (action === 'full-generate' || !action) {
-      try {
-        const match = text.match(/\{[\s\S]*\}/);
-        res.json(JSON.parse(match[0]));
-      } catch { res.json({ result: text }); }
+      const parsed = parseJsonFromAI(text);
+      res.json(parsed || { result: text });
     } else {
       res.json({ result: text.trim() });
     }
@@ -166,10 +248,8 @@ Return as JSON: {"challenge": "2-3 sentences about the financial challenge", "ap
     const prompt = `You are a professional financial advisor at Akarsu Advisory, helping small businesses. ${actions[action] || actions['full-generate']}`;
     const text = await aiComplete(prompt);
     if (action === 'full-generate' || !action) {
-      try {
-        const match = text.match(/\{[\s\S]*\}/);
-        res.json(JSON.parse(match[0]));
-      } catch { res.json({ result: text }); }
+      const parsed = parseJsonFromAI(text);
+      res.json(parsed || { result: text });
     } else {
       res.json({ result: text.trim() });
     }
@@ -202,14 +282,237 @@ router.post('/enhance-insight', auth, async (req, res) => {
     const prompt = `You are a financial content writer for Akarsu Advisory, helping small businesses. ${actions[action] || actions['improve-content']}`;
     const text = await aiComplete(prompt);
     if (action === 'generate-seo') {
-      try {
-        const match = text.match(/\{[\s\S]*\}/);
-        res.json(JSON.parse(match[0]));
-      } catch { res.json({ result: text }); }
+      const parsed = parseJsonFromAI(text);
+      res.json(parsed || { result: text });
     } else {
       res.json({ result: text.trim() });
     }
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Score a lead (hot/warm/cold) using AI
+// Called internally after form submission — also available as an explicit admin action
+router.post('/score-lead', auth, async (req, res) => {
+  try {
+    const { type, id, name, company, service_interest, industry, message, subject } = req.body;
+    if (!type || !id) return res.status(400).json({ error: 'type and id are required' });
+
+    const prompt = `You are a lead scoring specialist at Akarsu Advisory, a financial advisory firm for small businesses. Evaluate this inbound lead and score them.
+
+Lead type: ${type === 'consultation' ? 'Consultation Request' : 'Contact Form'}
+Name: ${name || 'Unknown'}
+Company: ${company || 'Not provided'}
+${service_interest ? `Service Interest: ${service_interest}` : ''}
+${industry ? `Industry: ${industry}` : ''}
+${subject ? `Subject: ${subject}` : ''}
+Message: ${message || 'No message provided'}
+
+Score this lead as one of: hot, warm, or cold.
+- hot: clear pain point, specific service need, likely decision-maker, budget implied
+- warm: genuine interest but vague or early-stage exploration
+- cold: generic inquiry, low urgency, likely researcher or competitor
+
+Return as JSON: {
+  "score": "hot|warm|cold",
+  "confidence": 0-100,
+  "reasoning": "1-2 sentence explanation",
+  "signals": ["signal 1", "signal 2", "signal 3"]
+}`;
+
+    const text = await aiComplete(prompt, 500);
+    const parsed = parseJsonFromAI(text);
+    if (!parsed) return res.status(500).json({ error: 'Failed to parse AI score response' });
+
+    // Persist the score to the DB
+    const table = type === 'consultation' ? 'consultations' : 'contacts';
+    await pool.query(
+      `UPDATE ${table} SET lead_score=$1, lead_score_reasoning=$2, lead_scored_at=NOW() WHERE id=$3`,
+      [parsed.score, JSON.stringify(parsed), id]
+    ).catch(() => {}); // columns may not exist if migration not run — silently ignore
+
+    res.json(parsed);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/ai/generate-proposal — draft a consulting proposal
+router.post('/generate-proposal', auth, async (req, res) => {
+  try {
+    const { client, industry, problem, scope, durationWeeks, budget, deliverables } = req.body || {};
+    const prompt = `Draft a concise consulting proposal in markdown.
+
+Client: ${client || 'TBD'}
+Industry: ${industry || 'TBD'}
+Problem statement: ${problem || 'TBD'}
+Scope: ${scope || 'TBD'}
+Duration (weeks): ${durationWeeks || 'TBD'}
+Budget: ${budget || 'TBD'}
+Deliverables: ${JSON.stringify(deliverables || [])}
+
+Sections:
+1. Executive Summary
+2. Understanding of the Problem
+3. Approach & Methodology
+4. Scope & Deliverables
+5. Timeline & Milestones
+6. Investment & Terms
+7. Why Akarsu Advisory
+8. Next Steps
+
+Be concise and confident. Use bullets where helpful.`;
+    const text = await aiComplete(prompt, 1500);
+    res.json({ proposal: text });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/ai/predict-engagement — predict likelihood of follow-on engagement
+router.post('/predict-engagement', auth, async (req, res) => {
+  try {
+    const { client, history, currentEngagement, signals } = req.body || {};
+    const prompt = `Predict the likelihood that the client will hire us for a follow-on engagement.
+
+Client: ${JSON.stringify(client || {})}
+Engagement history: ${JSON.stringify(history || [])}
+Current engagement: ${JSON.stringify(currentEngagement || {})}
+Signals: ${JSON.stringify(signals || [])}
+
+Respond with JSON only:
+{
+  "engagementProbabilityPct": 0,
+  "tier": "low|medium|high",
+  "topReasons": ["..."],
+  "risks": ["..."],
+  "recommendedNextActions": ["..."]
+}`;
+    const text = await aiComplete(prompt, 800);
+    const parsed = parseJsonFromAI(text);
+    if (!parsed) return res.status(500).json({ error: 'Failed to parse AI response', raw: text });
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/ai/generate-white-paper — draft a white paper from case study data
+router.post('/generate-white-paper', auth, async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(503).json({ error: 'AI service unavailable: OPENROUTER_API_KEY not configured.' });
+  }
+  try {
+    const { topic, audience, caseStudies, keyFindings, callToAction } = req.body || {};
+    if (!topic || typeof topic !== 'string' || !topic.trim()) {
+      return res.status(400).json({ error: "'topic' is required" });
+    }
+    const prompt = `You are a financial writer at Akarsu Advisory. Draft a thought-leadership white paper in markdown.
+
+Topic: ${topic}
+Target audience: ${audience || 'Small business owners and CFOs'}
+Underlying case studies / data points: ${JSON.stringify(caseStudies || [])}
+Key findings to highlight: ${keyFindings || 'Synthesize from the case studies provided.'}
+Call to action: ${callToAction || 'Schedule a consultation with Akarsu Advisory.'}
+
+Sections (in markdown):
+1. Title and executive summary (3-4 sentences)
+2. Industry context / why this matters
+3. Methodology / data sources
+4. Key findings (bullet points with brief commentary)
+5. Case study highlights (1-2 short anonymized vignettes)
+6. Recommendations for practitioners
+7. Conclusion + call to action
+
+Be concise, professional, and credible. Use # for the title, ## for sections.`;
+    const text = await aiComplete(prompt, 1800);
+    res.json({ whitePaper: text });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/ai/predict-pricing — recommend a price for an advisory engagement
+router.post('/predict-pricing', auth, async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(503).json({ error: 'AI service unavailable: OPENROUTER_API_KEY not configured.' });
+  }
+  try {
+    const { service, scope, durationWeeks, clientSize, industry, complexity, comparableProjects } = req.body || {};
+    if (!service || typeof service !== 'string' || !service.trim()) {
+      return res.status(400).json({ error: "'service' is required" });
+    }
+    const prompt = `You are a pricing strategist at Akarsu Advisory, a financial advisory firm for small businesses. Recommend a price for the following engagement using market-aware reasoning.
+
+Service: ${service}
+Scope: ${scope || 'Not specified'}
+Duration (weeks): ${durationWeeks || 'Not specified'}
+Client size: ${clientSize || 'Small business'}
+Industry: ${industry || 'General'}
+Complexity: ${complexity || 'Medium'}
+Comparable past projects: ${JSON.stringify(comparableProjects || [])}
+
+Respond with JSON only:
+{
+  "recommendedFixedFeeUSD": { "low": 0, "target": 0, "high": 0 },
+  "recommendedHourlyRateUSD": { "low": 0, "target": 0, "high": 0 },
+  "recommendedRetainerMonthlyUSD": { "low": 0, "target": 0, "high": 0 },
+  "primaryPricingModel": "fixed|hourly|retainer|hybrid",
+  "rationale": "1-2 sentence explanation",
+  "marketSignals": ["..."],
+  "discountTriggers": ["..."],
+  "premiumTriggers": ["..."]
+}`;
+    const text = await aiComplete(prompt, 900);
+    const parsed = parseJsonFromAI(text);
+    if (!parsed) return res.status(500).json({ error: 'Failed to parse AI response', raw: text });
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/ai/match-consultant — match a consultant to a client's industry/challenge
+router.post('/match-consultant', auth, async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(503).json({ error: 'AI service unavailable: OPENROUTER_API_KEY not configured.' });
+  }
+  try {
+    const { clientIndustry, challenge, budget, urgency, consultants } = req.body || {};
+    if (!challenge || typeof challenge !== 'string' || !challenge.trim()) {
+      return res.status(400).json({ error: "'challenge' is required" });
+    }
+    if (!Array.isArray(consultants) || consultants.length === 0) {
+      return res.status(400).json({ error: "'consultants' must be a non-empty array" });
+    }
+    const prompt = `You are a partner at Akarsu Advisory, matching consultants to client engagements.
+
+Client industry: ${clientIndustry || 'General'}
+Client challenge: ${challenge}
+Budget range: ${budget || 'Not specified'}
+Urgency: ${urgency || 'Standard'}
+
+Available consultants:
+${JSON.stringify(consultants, null, 2)}
+
+Rank the consultants from best to worst fit. Respond with JSON only:
+{
+  "rankings": [
+    {
+      "consultantId": "id-or-name",
+      "fitScore": 0,
+      "strengths": ["..."],
+      "concerns": ["..."],
+      "recommendedRole": "lead|support|advisor|skip"
+    }
+  ],
+  "topPickRationale": "...",
+  "alternativeStaffing": "..."
+}`;
+    const text = await aiComplete(prompt, 1200);
+    const parsed = parseJsonFromAI(text);
+    if (!parsed) return res.status(500).json({ error: 'Failed to parse AI response', raw: text });
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

@@ -3,7 +3,7 @@ import useSEO from '../../hooks/useSEO';
 
 export default function Contact() {
   useSEO('Contact', 'Get in touch with Akarsu Advisory.');
-  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', subject: '', message: '', website: '' }); // website = honeypot
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
@@ -57,6 +57,11 @@ export default function Contact() {
                   </div>
                   <div className="form-group"><label htmlFor="c-subject">Subject</label><input id="c-subject" value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} /></div>
                   <div className="form-group"><label htmlFor="c-msg">Message *</label><textarea id="c-msg" rows={5} required value={form.message} onChange={e => setForm({...form, message: e.target.value})} /></div>
+                  {/* Honeypot — hidden from real users, bots fill it in */}
+                  <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }} aria-hidden="true">
+                    <label htmlFor="c-website">Website</label>
+                    <input id="c-website" type="text" name="website" tabIndex={-1} autoComplete="off" value={form.website} onChange={e => setForm({...form, website: e.target.value})} />
+                  </div>
                   <button type="submit" className="btn btn-primary">Send Message</button>
                 </form>
               )}
