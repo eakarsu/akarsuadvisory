@@ -25,6 +25,11 @@ import AdminAI from './pages/admin/AdminAI';
 import AdminGenerateProposal from './pages/admin/AdminGenerateProposal';
 import AdminPredictEngagement from './pages/admin/AdminPredictEngagement';
 
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
+import TimelineView from './pages/TimelineView';
+
 // // === Batch 09 Gaps & Frontend Mounts ===
 const PredictiveEngagementModelingClientsLikelyToHireForNeCfs = React.lazy(() => import('./pages/Batch09/PredictiveEngagementModelingClientsLikelyToHireForNeCfs'));
 const WhitePaperGenerationFromCaseStudyDataCfs = React.lazy(() => import('./pages/Batch09/WhitePaperGenerationFromCaseStudyDataCfs'));
@@ -54,6 +59,10 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <Routes>
+        <Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
       {/* Public */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
