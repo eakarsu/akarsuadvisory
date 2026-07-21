@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin', label: 'Advisory Pipeline', end: true },
   { to: '/admin/ai', label: 'AI Assistant' },
   { to: '/admin/ai/generate-proposal', label: 'AI Proposal' },
   { to: '/admin/ai/predict-engagement', label: 'AI Engagement' },
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/admin/case-studies', label: 'Case Studies' },
   { to: '/admin/testimonials', label: 'Testimonials' },
 ];
+const visibleNav = import.meta.env.DEV && import.meta.env.VITE_ENABLE_GENERATED_FEATURES === 'true' ? NAV_ITEMS : NAV_ITEMS.slice(0,1);
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -29,7 +30,7 @@ export default function AdminLayout() {
           <span style={{ fontWeight: 700, fontSize: 14 }}>Admin</span>
         </div>
         <nav className="admin-nav">
-          {NAV_ITEMS.map(item => (
+          {visibleNav.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}>
               {item.label}
             </NavLink>

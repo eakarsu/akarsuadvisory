@@ -1,17 +1,1 @@
-const { Pool } = require('pg');
-
-let poolConfig;
-if (process.env.DATABASE_URL) {
-  poolConfig = { connectionString: process.env.DATABASE_URL };
-} else {
-  poolConfig = {
-    user: process.env.DB_USER || 'erolakarsu',
-    password: process.env.DB_PASSWORD || '',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME || 'akarsu_advisory',
-  };
-}
-
-const pool = new Pool(poolConfig);
-module.exports = pool;
+'use strict';const{Pool}=require('pg');if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is required');const pool=new Pool({connectionString:process.env.DATABASE_URL,max:Number(process.env.DB_POOL_SIZE||10),statement_timeout:15000,connectionTimeoutMillis:5000});pool.on('error',e=>console.error('database pool error',e.message));module.exports=pool;

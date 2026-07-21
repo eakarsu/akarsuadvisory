@@ -1,0 +1,37 @@
+name: governed-advisory
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: advisory_test }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/advisory_test
+      TEST_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/advisory_test
+      JWT_SECRET: test-secret-at-least-thirty-two-characters
+      JWT_ISSUER: advisory-ci
+      JWT_AUDIENCE: advisory-client
+      PUBLIC_TENANT_ID: tenant-a
+      ADVISORY_ACTIVE_KEY_VERSION: v1
+      ADVISORY_DATA_KEYS_JSON: '{"v1":"1111111111111111111111111111111111111111111111111111111111111111"}'
+      PUBLIC_APP_URL: https://advisory.example
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: '**/package-lock.json' }
+      - run: npm ci
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: ALLOW_SCHEMA_MIGRATION=1 ./start.sh migrate
+      - run: ALLOW_SCHEMA_MIGRATION=1 ./start.sh migrate
+      - run: ./start.sh check
+      - run: npm audit --audit-level=high
+        working-directory: backend
+      - run: npm audit --audit-level=high
+        working-directory: frontend

@@ -29,7 +29,7 @@ export default function BookConsultation() {
   const [form, setForm] = useState({
     email: '', name: '', company: '', phone: '',
     employees: '', industry: '', services: [], message: '',
-    website: '', // honeypot — must stay blank; bots fill it in
+    budgetBand: '5k_15k', timeline: 'within_30_days', consentToContact: false, website: '',
   });
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +48,7 @@ export default function BookConsultation() {
     setError('');
     if (form.services.length === 0) { setError('Please select at least one service.'); return; }
     try {
-      const res = await fetch('/api/consultations', {
+      const res = await fetch('/api/governed-advisory/intake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,8 +56,9 @@ export default function BookConsultation() {
           email: form.email,
           company: form.company,
           phone: form.phone,
-          service_interest: form.services.join('; '),
-          message: `Employees: ${form.employees}\nIndustry: ${form.industry}\n\nServices:\n${form.services.map(s => '- ' + s).join('\n')}\n\nNotes: ${form.message || 'N/A'}`,
+          service: 'operations_advisory', employeeBand: form.employees, industry: form.industry,
+          challenge: `Services: ${form.services.join('; ')}. ${form.message || 'The business needs a structured financial advisory assessment and implementation plan.'}`,
+          budgetBand: form.budgetBand, timeline: form.timeline, consentToContact: form.consentToContact,
           website: form.website, // honeypot
         }),
       });
@@ -89,6 +90,9 @@ export default function BookConsultation() {
                 <label htmlFor="b-email">Email *</label>
                 <input id="b-email" type="email" required value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
               </div>
+              <div className="form-group"><label>Budget range</label><select value={form.budgetBand} onChange={e=>setForm({...form,budgetBand:e.target.value})}><option value="under_5k">Under $5,000</option><option value="5k_15k">$5,000–$15,000</option><option value="15k_plus">$15,000+</option><option value="undecided">Undecided</option></select></div>
+              <div className="form-group"><label>Timeline</label><select value={form.timeline} onChange={e=>setForm({...form,timeline:e.target.value})}><option value="within_30_days">Within 30 days</option><option value="1_3_months">1–3 months</option><option value="later">Later</option></select></div>
+              <label style={{display:'flex',gap:8,marginBottom:20}}><input type="checkbox" required checked={form.consentToContact} onChange={e=>setForm({...form,consentToContact:e.target.checked})}/> I consent to being contacted about this request.</label>
 
               <div className="form-group">
                 <label htmlFor="b-name">What is your name? *</label>

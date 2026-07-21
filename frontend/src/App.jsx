@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import PublicLayout from './components/PublicLayout';
 import AdminLayout from './components/AdminLayout';
@@ -14,6 +14,7 @@ import BookConsultation from './pages/public/BookConsultation';
 // Admin pages
 import Login from './pages/Login';
 import Dashboard from './pages/admin/Dashboard';
+import GovernedAdvisory from './pages/admin/GovernedAdvisory';
 import AdminInsights from './pages/admin/AdminInsights';
 import AdminCaseStudies from './pages/admin/AdminCaseStudies';
 import AdminServices from './pages/admin/AdminServices';
@@ -57,11 +58,12 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const generated=import.meta.env.DEV&&import.meta.env.VITE_ENABLE_GENERATED_FEATURES==='true';
   return (
     <Routes>
-        <Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
+        {generated&&<><Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
         <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
-        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} /></>}
 
       {/* Public */}
       <Route element={<PublicLayout />}>
@@ -78,7 +80,8 @@ export default function App() {
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<GovernedAdvisory />} />
+        {generated&&<>
         <Route path="ai" element={<AdminAI />} />
         <Route path="ai/generate-proposal" element={<AdminGenerateProposal />} />
         <Route path="ai/predict-engagement" element={<AdminPredictEngagement />} />
@@ -89,9 +92,10 @@ export default function App() {
         <Route path="testimonials" element={<AdminTestimonials />} />
         <Route path="consultations" element={<AdminConsultations />} />
         <Route path="contacts" element={<AdminContacts />} />
+        </>}
       </Route>
     
-      {/* // === Batch 09 Gaps & Frontend Mounts === */}
+      {generated&&<>{/* // === Batch 09 Gaps & Frontend Mounts === */}
         <Route path="/batch09/cfs/predictive-engagement-modeling-clients-likely-to-hire-for-ne" element={<React.Suspense fallback={<div>Loading...</div>}><PredictiveEngagementModelingClientsLikelyToHireForNeCfs /></React.Suspense>} />
         <Route path="/batch09/cfs/white-paper-generation-from-case-study-data" element={<React.Suspense fallback={<div>Loading...</div>}><WhitePaperGenerationFromCaseStudyDataCfs /></React.Suspense>} />
         <Route path="/batch09/cfs/consultant-matching-by-client-industrychallenge" element={<React.Suspense fallback={<div>Loading...</div>}><ConsultantMatchingByClientIndustrychallengeCfs /></React.Suspense>} />
@@ -109,6 +113,7 @@ export default function App() {
         <Route path="/batch09/gap-nonai/knowledge-base-wiki" element={<React.Suspense fallback={<div>Loading...</div>}><KnowledgeBaseWikiGapNon /></React.Suspense>} />
         <Route path="/batch09/gap-nonai/calendar-integration-for-consultations" element={<React.Suspense fallback={<div>Loading...</div>}><CalendarIntegrationForConsultationsGapNon /></React.Suspense>} />
         <Route path="/batch09/gap-nonai/email-campaign-module" element={<React.Suspense fallback={<div>Loading...</div>}><EmailCampaignModuleGapNon /></React.Suspense>} />
+        </>}
 
       </Routes>
   );

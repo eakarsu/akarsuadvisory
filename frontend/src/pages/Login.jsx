@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@akarsuadvisory.com');
+  const [tenantId, setTenantId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -13,7 +14,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password);
+      await login(tenantId, email, password);
       navigate('/admin');
     } catch (err) {
       setError(err.message || 'Invalid credentials');
@@ -30,6 +31,7 @@ export default function Login() {
         </div>
         {error && <p style={{ color: '#dc2626', marginBottom: 12, textAlign: 'center', fontSize: 14 }}>{error}</p>}
         <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}><label style={{ display: 'block', marginBottom: 6 }}>Organization</label><input value={tenantId} onChange={e => setTenantId(e.target.value)} required style={{ width:'100%',padding:10,boxSizing:'border-box' }} /></div>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500 }}>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 15, boxSizing: 'border-box' }} />

@@ -1,15 +1,1 @@
-const jwt = require('jsonwebtoken');
-const SECRET = process.env.JWT_SECRET || 'akarsu_advisory_jwt_secret_2024';
-
-module.exports = function auth(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header) return res.status(401).json({ error: 'No token provided' });
-  const token = header.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided' });
-  try {
-    req.user = jwt.verify(token, SECRET);
-    next();
-  } catch {
-    res.status(403).json({ error: 'Invalid token' });
-  }
-};
+'use strict';const jwt=require('jsonwebtoken');module.exports=(req,res,next)=>{const s=process.env.JWT_SECRET,i=process.env.JWT_ISSUER,a=process.env.JWT_AUDIENCE;if(!s||s.length<32||!i||!a)return res.status(503).json({error:'Authentication is not configured'});const h=req.headers.authorization;if(!h?.startsWith('Bearer '))return res.status(401).json({error:'Bearer token required'});try{const u=jwt.verify(h.slice(7),s,{algorithms:['HS256'],issuer:i,audience:a});if(!u.id||!u.tenantId||!u.role||!u.jti)throw new Error();req.user=u;next()}catch{return res.status(401).json({error:'Invalid token'})}};
