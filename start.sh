@@ -111,8 +111,14 @@ case "$mode" in
     done
     [ -d "$ROOT_DIR/backend/node_modules" ] || { echo 'backend dependencies are not installed' >&2; exit 1; }
     [ -d "$ROOT_DIR/frontend/node_modules" ] || { echo 'frontend dependencies are not installed' >&2; exit 1; }
+    if [ "${NODE_ENV:-development}" != production ] && [ "${ENABLE_DEMO_CREDENTIAL_AUTOFILL:-true}" = true ]; then
+      [ "${ALLOW_SCHEMA_MIGRATION:-}" = 1 ] || [ "${ALLOW_SCHEMA_MIGRATION:-}" = true ] || { echo 'ALLOW_SCHEMA_MIGRATION=1 is required for local demo startup' >&2; exit 1; }
+      psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$ROOT_DIR/backend/db/migrations/001_governed_advisory.sql"
+      psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$ROOT_DIR/backend/db/migrations/002_runtime_ai.sql"
+      node "$ROOT_DIR/backend/scripts/create-admin.js"
+    fi
     psql "$DATABASE_URL" -Atqc 'SELECT 1' >/dev/null
-    echo "Starting Akarsu Advisory API on $BACKEND_PORT and UI on $FRONTEND_PORT; persistent state is unchanged."
+    echo "Starting Akarsu Advisory API on $BACKEND_PORT and UI on $FRONTEND_PORT."
     exec node "$ROOT_DIR/runtime-launcher.js"
     ;;
   *) echo 'usage: ./start.sh [check|migrate|start]' >&2; exit 2;;
