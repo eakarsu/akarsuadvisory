@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminModal from '../../components/AdminModal';
+import AIReport from '../../components/AIReport.jsx';
+
+const articlePresets = [
+  { label: 'Cash flow', topic: 'How a small retailer can reduce overdue receivables and plan weekly cash flow', category: 'Cash Flow' },
+  { label: 'Tax planning', topic: 'Year-end tax planning questions for a growing local service business', category: 'Tax' },
+  { label: 'Advisory', topic: 'When a growing business should consider fractional CFO support', category: 'Advisory' },
+];
 
 export default function AdminInsights() {
   const { api } = useAuth();
@@ -58,6 +65,7 @@ export default function AdminInsights() {
       {showForm && <>
       <div style={{ marginBottom: 20, padding: 16, background: '#f7f7f7', borderRadius: 8, border: '1px solid #99f6e4' }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#2a3139' }}>AI Article Generator</h3>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>{articlePresets.map((preset) => <button key={preset.label} type="button" className="btn btn-outline" disabled={aiLoading} onClick={() => { setAiTopic(preset.topic); setForm((current) => ({ ...current, category: preset.category })); }}>{preset.label} example</button>)}</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input placeholder="Enter a topic (e.g. 'How to manage inventory costs for restaurants')" value={aiTopic} onChange={e => setAiTopic(e.target.value)} style={{ flex: 1, padding: '8px 14px', border: '1px solid #e2e8f0', borderRadius: 6 }} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), generateWithAI())} />
           <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: 13 }} onClick={generateWithAI} disabled={aiLoading}>{aiLoading ? 'Generating...' : 'Generate Article'}</button>
@@ -133,9 +141,7 @@ export default function AdminInsights() {
               {aiLoading && <div style={{ padding: 16, background: '#f8fafc', borderRadius: 8, textAlign: 'center', color: '#64748b' }}>Generating...</div>}
               {aiResult && !aiLoading && (
                 <div style={{ padding: 16, background: '#f7f7f7', borderRadius: 8, border: '1px solid #99f6e4' }}>
-                  {aiResult.result && <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>{aiResult.result}</pre>}
-                  {aiResult.meta_description && <div style={{ marginBottom: 8 }}><strong>Meta Description:</strong> {aiResult.meta_description}</div>}
-                  {aiResult.keywords && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}><strong style={{ marginRight: 4 }}>Keywords:</strong> {aiResult.keywords.map((k, i) => <span key={i} style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 10px', borderRadius: 12, fontSize: 12 }}>{k}</span>)}</div>}
+                  <AIReport response={aiResult} title="Insight assistant" />
                   <button className="btn btn-outline" style={{ marginTop: 12, padding: '6px 14px', fontSize: 12 }} onClick={() => copyToClipboard(aiResult.result || aiResult.meta_description || JSON.stringify(aiResult, null, 2))}>Copy to Clipboard</button>
                 </div>
               )}

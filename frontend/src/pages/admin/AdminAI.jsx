@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import NativeAIControls from '../../components/NativeAIControls.jsx';
+import AIReport from '../../components/AIReport.jsx';
 
 export default function AdminAI() {
   const { api } = useAuth();
@@ -72,9 +74,9 @@ export default function AdminAI() {
     }
     if (tab === 'service') {
       const samples = [
-        { name: 'Forensic Accounting & Fraud Detection', desc: '' },
+        { name: 'Forensic Accounting & Fraud Detection', desc: 'Review transaction patterns, document evidence, and prepare findings for an authorized client review.' },
         { name: 'Startup Financial Modeling', desc: 'Helping early-stage startups build investor-ready financial models.' },
-        { name: 'Nonprofit Grant Accounting', desc: '' },
+        { name: 'Nonprofit Grant Accounting', desc: 'Track restricted funds, reconcile grant expenses, and prepare clear reporting for program leaders.' },
       ];
       const s = samples[Math.floor(Math.random() * samples.length)];
       setServiceName(s.name); setServiceDesc(s.desc);
@@ -115,11 +117,7 @@ export default function AdminAI() {
     if (tab === 'matcher') {
       setMatchIndustry('Specialty Retail');
       setMatchChallenge('Profitable on paper but cash-strapped mid-month across 3 stores; needs a 13-week cash forecast and working capital review.');
-      setMatchConsultants(JSON.stringify([
-        { id: 'c1', name: 'A. Akarsu', specialties: ['cash flow', 'fractional CFO', 'retail'], yearsExperience: 18 },
-        { id: 'c2', name: 'J. Patel', specialties: ['SaaS finance', 'modeling'], yearsExperience: 9 },
-        { id: 'c3', name: 'M. Rivera', specialties: ['working capital', 'retail ops'], yearsExperience: 12 },
-      ], null, 2));
+      // Consultant records must come from the user's actual roster.
     }
   };
 
@@ -284,26 +282,7 @@ export default function AdminAI() {
     if (!result) return null;
     if (result.type === 'error') return <div style={{ padding: 16, background: '#fef2f2', borderRadius: 8, color: '#dc2626' }}>{result.data}</div>;
 
-    const resultBox = (content) => (
-      <div style={{ padding: 20, background: '#f7f7f7', borderRadius: 8, border: '1px solid #99f6e4', marginTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2a3139', margin: 0 }}>AI Result</h3>
-          <button className="btn btn-outline" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => copyToClipboard(typeof content === 'string' ? content : JSON.stringify(content, null, 2))}>Copy</button>
-        </div>
-        {typeof content === 'string' ? (
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>{content}</pre>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {Object.entries(content).filter(([k]) => k !== 'type').map(([key, val]) => (
-              <div key={key}>
-                <strong style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>{key.replace(/_/g, ' ')}</strong>
-                <div style={{ marginTop: 4, fontSize: 14, color: '#334155', lineHeight: 1.7 }}>{typeof val === 'string' ? val : JSON.stringify(val)}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+    const resultBox = (content) => <AIReport response={content} title="AI Result" />;
 
     if (result.type === 'insight') return resultBox(result.data);
     if (result.type === 'reply') return resultBox(result.data.reply);
@@ -321,7 +300,7 @@ export default function AdminAI() {
   const textareaStyle = { ...inputStyle, resize: 'vertical' };
 
   return (
-    <div className="admin-page">
+    <NativeAIControls busy={loading} context={tabs.find((tab) => tab.id === activeTab)?.label || 'advisory'}><div className="admin-page">
       <h1 className="admin-title">AI Assistant</h1>
 
       {/* Tabs */}
@@ -493,7 +472,7 @@ export default function AdminAI() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input placeholder="Client industry" value={matchIndustry} onChange={e => setMatchIndustry(e.target.value)} style={inputStyle} />
               <textarea placeholder="Client challenge" rows={3} value={matchChallenge} onChange={e => setMatchChallenge(e.target.value)} style={textareaStyle} />
-              <textarea placeholder='Consultants (JSON array, e.g. [{"id":"c1","name":"Jane","specialties":["cash flow"]}])' rows={6} value={matchConsultants} onChange={e => setMatchConsultants(e.target.value)} style={{ ...textareaStyle, fontFamily: 'monospace' }} />
+              <textarea data-ai-reference="Consultant roster" placeholder="Consultants (JSON array of actual consultant records)" rows={6} value={matchConsultants} onChange={e => setMatchConsultants(e.target.value)} style={{ ...textareaStyle, fontFamily: 'monospace' }} />
               <button className="btn btn-primary" onClick={matchConsultant} disabled={loading}>{loading ? 'Matching...' : 'Match Consultant'}</button>
             </div>
           </div>
@@ -510,6 +489,6 @@ export default function AdminAI() {
         {/* Result */}
         {renderResult()}
       </div>
-    </div>
+    </div></NativeAIControls>
   );
 }

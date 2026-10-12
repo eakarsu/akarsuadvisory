@@ -1,3 +1,4 @@
+import AIReportLibrary from "./components/AIReportLibrary";
 import React from 'react';import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import PublicLayout from './components/PublicLayout';
@@ -60,7 +61,7 @@ function ProtectedRoute({ children }) {
 export default function App() {
   const generated=import.meta.env.DEV&&import.meta.env.VITE_ENABLE_GENERATED_FEATURES==='true';
   return (
-    <Routes>
+    <><AIReportLibrary floating /><Routes>
         {generated&&<><Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
         <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
         <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} /></>}
@@ -115,6 +116,6 @@ export default function App() {
         <Route path="/batch09/gap-nonai/email-campaign-module" element={<React.Suspense fallback={<div>Loading...</div>}><EmailCampaignModuleGapNon /></React.Suspense>} />
         </>}
 
-      </Routes>
+      </Routes></>
   );
 }

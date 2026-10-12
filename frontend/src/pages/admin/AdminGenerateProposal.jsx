@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import NativeAIControls from '../../components/NativeAIControls.jsx';
+import AIReport from '../../components/AIReport.jsx';
 
 export default function AdminGenerateProposal() {
   const { api } = useAuth();
@@ -53,13 +55,13 @@ export default function AdminGenerateProposal() {
   const sampleBtnStyle = { padding: '5px 12px', fontSize: 12, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 6, cursor: 'pointer', fontWeight: 500, fontFamily: 'DM Sans, sans-serif' };
 
   return (
-    <div className="admin-page">
+    <NativeAIControls busy={loading} context="consulting proposal"><div className="admin-page">
       <h1 className="admin-title">AI Proposal Generator</h1>
 
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', margin: 0 }}>Generate Consulting Proposal</h2>
-          <button style={sampleBtnStyle} onClick={loadSample}>Load Sample</button>
+          <button type="button" style={sampleBtnStyle} onClick={loadSample}>Load Sample</button>
         </div>
         <p style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Draft a structured consulting proposal in markdown.</p>
 
@@ -89,17 +91,8 @@ export default function AdminGenerateProposal() {
           <div style={{ marginTop: 20, padding: 16, background: '#fef2f2', borderRadius: 8, color: '#dc2626' }}>{error}</div>
         )}
 
-        {result && (
-          <div style={{ marginTop: 20, padding: 20, background: '#f7f7f7', borderRadius: 8, border: '1px solid #99f6e4' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2a3139', margin: 0, marginBottom: 12 }}>Generated Proposal</h3>
-            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>
-              {typeof (result.proposal || result.result) === 'string'
-                ? (result.proposal || result.result)
-                : JSON.stringify(result, null, 2)}
-            </pre>
-          </div>
-        )}
+        {result && <AIReport response={result} title="Generated Proposal" />}
       </div>
-    </div>
+    </div></NativeAIControls>
   );
 }

@@ -1,3 +1,4 @@
+import AIReport from '../../components/AIReport.jsx';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminModal from '../../components/AdminModal';
@@ -179,7 +180,7 @@ export default function AdminConsultations() {
 
               {aiReply ? (
                 <div style={{ padding: 16, background: '#f7f7f7', borderRadius: 8, border: '1px solid #99f6e4' }}>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>{aiReply}</pre>
+                  <AIReport response={aiReply} title="Suggested reply" />
                   <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                     <button className="btn btn-outline" style={{ padding: '6px 14px', fontSize: 12 }} onClick={() => copyToClipboard(aiReply)}>Copy to Clipboard</button>
                     <a href={`mailto:${selected.email}?subject=Re: Consultation Request - Akarsu Advisory&body=${encodeURIComponent(aiReply)}`} className="btn btn-primary" style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}>Open in Email Client</a>

@@ -1,3 +1,4 @@
+import AIReport from '../../components/AIReport.jsx';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminModal from '../../components/AdminModal';
@@ -118,7 +119,7 @@ export default function AdminCaseStudies() {
               {aiLoading && <div style={{ padding: 16, background: '#f8fafc', borderRadius: 8, textAlign: 'center', color: '#64748b' }}>Generating...</div>}
               {aiResult && !aiLoading && (
                 <div style={{ padding: 16, background: '#f7f7f7', borderRadius: 8, border: '1px solid #99f6e4' }}>
-                  {aiResult.result && <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>{aiResult.result}</pre>}
+                  <AIReport response={aiResult} title="AI suggestion" />
                   {aiResult.challenge && <div style={{ marginBottom: 8 }}><strong>Challenge:</strong> {aiResult.challenge}</div>}
                   {aiResult.approach && <div style={{ marginBottom: 8 }}><strong>Approach:</strong> {aiResult.approach}</div>}
                   {aiResult.result && !aiResult.challenge && ''}

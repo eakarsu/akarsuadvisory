@@ -7,7 +7,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const [demoLoading, setDemoLoading] = useState(false);
+  const { login, demoLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -42,12 +43,27 @@ export default function Login() {
           </div>
           <button
             type="button"
-            onClick={() => { setEmail(import.meta.env.VITE_DEMO_EMAIL || ''); setPassword(import.meta.env.VITE_DEMO_PASSWORD || ''); }}
-            disabled={!import.meta.env.VITE_DEMO_EMAIL || !import.meta.env.VITE_DEMO_PASSWORD}
-            aria-label="Auto Fill Demo Credentials"
+            disabled={demoLoading}
+            onClick={async () => {
+              const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
+              const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+              if (!demoEmail || !demoPassword) {
+                setDemoLoading(true);
+                setError('');
+                try { await demoLogin(); navigate('/admin'); }
+                catch (err) { setError(err.message || 'Demo account is unavailable.'); }
+                finally { setDemoLoading(false); }
+                return;
+              }
+              setTenantId(import.meta.env.VITE_DEMO_TENANT || tenantId);
+              setEmail(demoEmail);
+              setPassword(demoPassword);
+              setError('');
+            }}
+            aria-label={import.meta.env.VITE_DEMO_EMAIL && import.meta.env.VITE_DEMO_PASSWORD ? 'Fill demo credentials' : 'Demo login'}
             style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
           >
-            Auto Fill Demo Credentials
+            {demoLoading ? 'Signing in…' : import.meta.env.VITE_DEMO_EMAIL && import.meta.env.VITE_DEMO_PASSWORD ? 'Fill demo credentials' : 'Demo login'}
           </button>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Sign In</button>
         </form>

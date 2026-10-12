@@ -12,8 +12,8 @@ router.get('/', auth, async (req, res) => {
       pool.query('SELECT COUNT(*) FROM services'),
       pool.query('SELECT COUNT(*) FROM industries'),
     ]);
-    const recentConsultations = await pool.query('SELECT * FROM consultations ORDER BY created_at DESC LIMIT 5');
-    const recentContacts = await pool.query('SELECT * FROM contacts ORDER BY created_at DESC LIMIT 5');
+    const recentConsultations = await pool.query('SELECT * FROM consultations ORDER BY created_at DESC LIMIT 15');
+    const recentContacts = await pool.query('SELECT * FROM contacts ORDER BY created_at DESC LIMIT 15');
     res.json({
       stats: {
         consultations: parseInt(consultations.rows[0].count),

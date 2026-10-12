@@ -1,3 +1,4 @@
+import AIReport from '../../components/AIReport.jsx';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminModal from '../../components/AdminModal';
@@ -11,8 +12,22 @@ export default function AdminServices() {
   const [showForm, setShowForm] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
-  const load = () => api('/api/admin/services').then(r => r.json()).then(setItems).catch(() => {});
+  const load = async () => {
+    try {
+      const response = await api('/api/admin/services');
+      if (!response.ok) throw new Error(`Services request failed (${response.status}).`);
+      const payload = await response.json();
+      const rows = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(rows)) throw new Error('Services response did not contain a record list.');
+      setItems(rows);
+      setLoadError('');
+    } catch (error) {
+      setItems([]);
+      setLoadError(error.message);
+    }
+  };
   useEffect(() => { load(); }, []);
 
   const save = async (e) => {
@@ -51,6 +66,7 @@ export default function AdminServices() {
         <h1 className="admin-title" style={{ margin: 0 }}>Services ({items.length})</h1>
         {!showForm && <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Add New</button>}
       </div>
+      {loadError && <p role="alert">{loadError}</p>}
       {showForm && <form onSubmit={save} className="admin-form">
         <div className="admin-form-grid">
           <input placeholder="Name" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
@@ -120,7 +136,7 @@ export default function AdminServices() {
               {aiLoading && <div style={{ padding: 16, background: '#f8fafc', borderRadius: 8, textAlign: 'center', color: '#64748b' }}>Generating...</div>}
               {aiResult && !aiLoading && (
                 <div style={{ padding: 16, background: '#edf2f7', borderRadius: 8, border: '1px solid #99f6e4' }}>
-                  {aiResult.result && <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>{aiResult.result}</pre>}
+                  <AIReport response={aiResult} title="AI suggestion" />
                   {aiResult.tagline && <div style={{ marginBottom: 8 }}><strong>Tagline:</strong> {aiResult.tagline}</div>}
                   {aiResult.description && <div style={{ marginBottom: 8 }}><strong>Description:</strong> {aiResult.description}</div>}
                   {aiResult.features && <div><strong>Features:</strong> {aiResult.features}</div>}

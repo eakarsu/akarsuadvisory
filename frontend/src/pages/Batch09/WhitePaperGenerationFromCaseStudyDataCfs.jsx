@@ -1,5 +1,7 @@
 // // === Batch 09 Gaps & Frontend Mounts ===
 import React, { useState } from 'react';
+import NativeAIControls from '../../components/NativeAIControls.jsx';
+import AIReport from '../../components/AIReport.jsx';
 
 export default function WhitePaperGenerationFromCaseStudyDataPage() {
   const [input, setInput] = useState('');
@@ -24,10 +26,10 @@ export default function WhitePaperGenerationFromCaseStudyDataPage() {
   };
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
+    <NativeAIControls busy={loading} context="White-paper generation from case study data"><div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>White-paper generation from case study data</h1>
       <p style={{ color: '#666', marginBottom: 16 }}>Generated gap feature for akarsuadvisory.</p>
-      <textarea
+      <textarea data-ai-field="prompt"
         value={input}
         onChange={e => setInput(e.target.value)}
         placeholder="Describe what you need..."
@@ -42,11 +44,7 @@ export default function WhitePaperGenerationFromCaseStudyDataPage() {
         {loading ? 'Running...' : 'Run AI'}
       </button>
       {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
-      {result && (
-        <pre style={{ marginTop: 16, padding: 12, background: '#f4f4f4', borderRadius: 6, overflow: 'auto', maxHeight: 500 }}>
-{JSON.stringify(result, null, 2)}
-        </pre>
-      )}
-    </div>
+      {result && <AIReport response={result} title="White-paper generation from case study data" />}
+    </div></NativeAIControls>
   );
 }

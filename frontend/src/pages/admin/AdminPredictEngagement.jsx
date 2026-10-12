@@ -1,5 +1,7 @@
+import NativeAIControls from "../../components/NativeAIControls.jsx";
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import AIReport from '../../components/AIReport.jsx';
 
 export default function AdminPredictEngagement() {
   const { api } = useAuth();
@@ -53,7 +55,7 @@ export default function AdminPredictEngagement() {
   const probability = result?.probability ?? result?.score;
 
   return (
-    <div className="admin-page">
+    <NativeAIControls busy={loading} context="akarsuadvisory"><div className="admin-page">
       <h1 className="admin-title">AI Engagement Predictor</h1>
 
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 }}>
@@ -65,14 +67,14 @@ export default function AdminPredictEngagement() {
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <input placeholder="Client Name" value={form.client_name} onChange={set('client_name')} style={inputStyle} />
-            <input placeholder="Company" value={form.company} onChange={set('company')} style={inputStyle} />
+            <input data-ai-field={"client_name"} placeholder="Client Name" value={form.client_name} onChange={set('client_name')} style={inputStyle} />
+            <input data-ai-field={"company"} placeholder="Company" value={form.company} onChange={set('company')} style={inputStyle} />
           </div>
-          <input placeholder="Industry" value={form.industry} onChange={set('industry')} style={inputStyle} />
-          <input placeholder="Last engagement (e.g. Q3 2025: job costing setup)" value={form.last_engagement} onChange={set('last_engagement')} style={inputStyle} />
-          <textarea placeholder="Interaction summary *" rows={3} value={form.interaction_summary} onChange={set('interaction_summary')} required style={textareaStyle} />
-          <textarea placeholder="Open opportunities" rows={3} value={form.open_opportunities} onChange={set('open_opportunities')} style={textareaStyle} />
-          <textarea placeholder="Sentiment signals" rows={3} value={form.sentiment_signals} onChange={set('sentiment_signals')} style={textareaStyle} />
+          <input data-ai-field={"industry"} placeholder="Industry" value={form.industry} onChange={set('industry')} style={inputStyle} />
+          <input data-ai-field={"last_engagement"} placeholder="Last engagement (e.g. Q3 2025: job costing setup)" value={form.last_engagement} onChange={set('last_engagement')} style={inputStyle} />
+          <textarea data-ai-field={"interaction_summary"} placeholder="Interaction summary *" rows={3} value={form.interaction_summary} onChange={set('interaction_summary')} required style={textareaStyle} />
+          <textarea data-ai-field={"open_opportunities"} placeholder="Open opportunities" rows={3} value={form.open_opportunities} onChange={set('open_opportunities')} style={textareaStyle} />
+          <textarea data-ai-field={"sentiment_signals"} placeholder="Sentiment signals" rows={3} value={form.sentiment_signals} onChange={set('sentiment_signals')} style={textareaStyle} />
           <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Predicting…' : 'Predict Engagement'}</button>
         </form>
 
@@ -96,14 +98,10 @@ export default function AdminPredictEngagement() {
                 </span>
               )}
             </div>
-            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.7, color: '#334155', margin: 0 }}>
-              {typeof (result.analysis || result.result) === 'string'
-                ? (result.analysis || result.result)
-                : JSON.stringify(result, null, 2)}
-            </pre>
+            <AIReport response={result.analysis ?? result.result ?? result} title="Engagement Forecast" />
           </div>
         )}
       </div>
-    </div>
+    </div></NativeAIControls>
   );
 }

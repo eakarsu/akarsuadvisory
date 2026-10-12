@@ -7,15 +7,22 @@ export default function Services() {
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     fetch('/api/services')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Services request failed (${res.status}).`);
+        return res.json();
+      })
       .then((data) => {
-        setServices(data);
+        const rows = Array.isArray(data) ? data : data?.data;
+        if (!Array.isArray(rows)) throw new Error('Services response did not contain a record list.');
+        setServices(rows);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        setLoadError(error.message);
         setLoading(false);
       });
   }, []);
@@ -35,7 +42,9 @@ export default function Services() {
       {/* Services Grid */}
       <section className="section">
         <div className="container">
-          {loading ? (
+          {loadError ? (
+            <p role="alert" className="text-center">{loadError}</p>
+          ) : loading ? (
             <p className="text-center text-muted">Loading services...</p>
           ) : services.length > 0 ? (
             <div className="grid grid-3">

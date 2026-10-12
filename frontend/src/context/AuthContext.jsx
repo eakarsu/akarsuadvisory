@@ -31,8 +31,18 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tenantId, email, password }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    const data = await res.json().catch(() => ({ error: `Sign-in request failed (${res.status}). Please try again later.` }));
+    if (!res.ok) throw new Error(data.error || `Sign-in request failed (${res.status}).`);
+    localStorage.setItem('token', data.token);
+    setToken(data.token);
+    setUser(data.user);
+    return data;
+  };
+
+  const demoLogin = async () => {
+    const res = await fetch('/api/auth/demo-login', { method: 'POST' });
+    const data = await res.json().catch(() => ({ error: `Demo sign-in request failed (${res.status}). Please try again later.` }));
+    if (!res.ok) throw new Error(data.error || 'Demo account is unavailable.');
     localStorage.setItem('token', data.token);
     setToken(data.token);
     setUser(data.user);
@@ -46,7 +56,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, api }}>
+    <AuthContext.Provider value={{ user, token, loading, login, demoLogin, logout, api }}>
       {children}
     </AuthContext.Provider>
   );

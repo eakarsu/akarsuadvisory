@@ -1,0 +1,65 @@
+[
+  {
+    "name": "AiClientIntentScoringOnContactSubmissionsPage",
+    "id": "gap-ai-akarsuadvisory/ai-client-intent-scoring-on-contact-submissions",
+    "title": "AI client-intent scoring on contact submissions",
+    "description": "Prepare a professional advisory report for ai client-intent scoring on contact submissions using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "AiCompetitorPositioningAnalysisPage",
+    "id": "gap-ai-akarsuadvisory/ai-competitor-positioning-analysis",
+    "title": "AI competitor-positioning analysis",
+    "description": "Prepare a professional advisory report for ai competitor-positioning analysis using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "AiPersonalizationOfContentPerVisitorSegmentPage",
+    "id": "gap-ai-akarsuadvisory/ai-personalization-of-content-per-visitor-segment",
+    "title": "AI personalization of content per visitor segment",
+    "description": "Prepare a professional advisory report for ai personalization of content per visitor segment using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "CalendarIntegrationForConsultationsPage",
+    "id": "gap-nonai-akarsuadvisory/calendar-integration-for-consultations",
+    "title": "Calendar integration for consultations",
+    "description": "Prepare a professional advisory report for calendar integration for consultations using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "EmailCampaignModulePage",
+    "id": "gap-nonai-akarsuadvisory/email-campaign-module",
+    "title": "Email campaign module",
+    "description": "Prepare a professional advisory report for email campaign module using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "EngagementProjectTrackingPage",
+    "id": "gap-nonai-akarsuadvisory/engagement-project-tracking",
+    "title": "Engagement / project tracking",
+    "description": "Prepare a professional advisory report for engagement / project tracking using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "KnowledgeBaseWikiPage",
+    "id": "gap-nonai-akarsuadvisory/knowledge-base-wiki",
+    "title": "Knowledge base / wiki",
+    "description": "Prepare a professional advisory report for knowledge base / wiki using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "ProposalGenerationBeyondTemplatesPage",
+    "id": "gap-nonai-akarsuadvisory/proposal-generation-beyond-templates",
+    "title": "Proposal generation (beyond templates)",
+    "description": "Prepare a professional advisory report for proposal generation (beyond templates) using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "RetainerBillingAndInvoicingPage",
+    "id": "gap-nonai-akarsuadvisory/retainer-billing-and-invoicing",
+    "title": "Retainer billing and invoicing",
+    "description": "Prepare a professional advisory report for retainer billing and invoicing using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  }
+]
