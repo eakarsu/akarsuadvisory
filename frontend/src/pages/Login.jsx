@@ -7,8 +7,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [demoLoading, setDemoLoading] = useState(false);
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -41,31 +40,16 @@ export default function Login() {
             <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500 }}>Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 15, boxSizing: 'border-box' }} />
           </div>
-          <button
-            type="button"
-            disabled={demoLoading}
-            onClick={async () => {
-              const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
-              const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
-              if (!demoEmail || !demoPassword) {
-                setDemoLoading(true);
-                setError('');
-                try { await demoLogin(); navigate('/admin'); }
-                catch (err) { setError(err.message || 'Demo account is unavailable.'); }
-                finally { setDemoLoading(false); }
-                return;
-              }
-              setTenantId(import.meta.env.VITE_DEMO_TENANT || tenantId);
-              setEmail(demoEmail);
-              setPassword(demoPassword);
-              setError('');
-            }}
-            aria-label={import.meta.env.VITE_DEMO_EMAIL && import.meta.env.VITE_DEMO_PASSWORD ? 'Fill demo credentials' : 'Demo login'}
-            style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
-          >
-            {demoLoading ? 'Signing in…' : import.meta.env.VITE_DEMO_EMAIL && import.meta.env.VITE_DEMO_PASSWORD ? 'Fill demo credentials' : 'Demo login'}
-          </button>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Sign In</button>
+          <button type="button" aria-label="Fill demo credentials" onClick={async () => {
+            const demoEmail = import.meta.env.VITE_DEMO_EMAIL; const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+            if (demoEmail && demoPassword) { setEmail(demoEmail); setPassword(demoPassword); return; }
+            try {
+              const res = await fetch('/api/auth/demo-credentials', { cache: 'no-store' });
+              if (res.ok) { const data = await res.json(); if (data.email && data.password) { setEmail(data.email); setPassword(data.password); return; } }
+            } catch { /* fallback below */ }
+            setError('Demo credentials are not configured for this environment.');
+          }} style={{ width: '100%', marginTop: 12, padding: '10px 14px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, cursor: 'pointer' }}>Fill demo credentials</button>
         </form>
       </div>
     </div>

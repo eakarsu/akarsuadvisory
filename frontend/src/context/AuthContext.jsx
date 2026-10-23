@@ -39,16 +39,6 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const demoLogin = async () => {
-    const res = await fetch('/api/auth/demo-login', { method: 'POST' });
-    const data = await res.json().catch(() => ({ error: `Demo sign-in request failed (${res.status}). Please try again later.` }));
-    if (!res.ok) throw new Error(data.error || 'Demo account is unavailable.');
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
-    setUser(data.user);
-    return data;
-  };
-
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -56,7 +46,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, demoLogin, logout, api }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, api }}>
       {children}
     </AuthContext.Provider>
   );
